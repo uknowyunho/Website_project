@@ -1,9 +1,13 @@
-.circle-cursor-css {
+.circle-cursor1-css {
     cursor: pointer;
     color : royalblue;
     transition : color 0.2s ease;
 }
 
-.circle-cursor-css:hover {
+.circle-cursor1-css:hover {
     color: tomato;
+}
+
+.circle-cursor2-css {
+    cursor: url('https://upload.wikimedia.org/wikipedia/commons/3/30/Red_circle.svg') 16 16, pointer;
 }
