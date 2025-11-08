@@ -1,0 +1,9 @@
+.circle-cursor-css {
+    cursor: pointer;
+    color : royalblue;
+    transition : color 0.2s ease;
+}
+
+.circle-cursor-css:hover {
+    color: tomato;
+}
