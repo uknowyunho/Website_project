@@ -1,0 +1,14 @@
+body {
+    height: 100vh;
+    /* 화면 전체 높이 */
+    margin: 0;
+
+    display: flex;
+    /* 플렉스박스로 전환 */
+    flex-direction: column;
+    /* 세로로 배치 */
+    justify-content: center;
+    /* 세로 중앙 정렬 */
+    align-items: center;
+    /* 가로 중앙 정렬 */
+}
