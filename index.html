@@ -9,16 +9,26 @@
     <body>
 
         <div class="container">
-            <h1>🔒 비밀 사진 보관함</h1>
 
-            <!-- 비밀번호 입력 -->
-            <div id="auth-section">
-                <input type="password" id="password-input" placeholder="비밀번호 입력">
+            <!-- 1) 비밀번호 처음 설정 화면 -->
+            <div id="setup-section" style="display:none;">
+                <h1>🔒 비밀번호 설정</h1>
+                <input type="password" id="new-pass" placeholder="비밀번호 입력">
+                <input type="password" id="new-pass2" placeholder="비밀번호 확인">
+                <button onclick="setPassword()">설정 완료</button>
+            </div>
+
+            <!-- 2) 로그인 화면 -->
+            <div id="login-section" style="display:none;">
+                <h1>🔐 로그인</h1>
+                <input type="password" id="login-pass" placeholder="비밀번호 입력">
                 <button onclick="login()">입장하기</button>
             </div>
 
-            <!-- 메인 화면 -->
+            <!-- 3) 메인 보관함 -->
             <div id="main-section" style="display:none;">
+                <h1>📁 비밀 사진 보관함</h1>
+
                 <div class="upload-box">
                     <input type="file" id="file-input" accept="image/*">
                     <button onclick="uploadImage()">사진 업로드</button>
@@ -27,6 +37,7 @@
                 <h2>저장된 사진</h2>
                 <div id="gallery"></div>
             </div>
+
         </div>
 
         <script src="app.js"></script>
