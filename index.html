@@ -1,59 +1,907 @@
 <!DOCTYPE html>
 <html lang="ko">
-<head>
-    <meta charset="UTF-8">
-    <title>비밀 사진 보관함</title>
-    <link rel="stylesheet" href="css/style.css">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>점심메뉴 추천 대시보드</title>
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
 
-    <!-- CryptoJS CDN -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
-</head>
-<body>
+            body {
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                background: #f5f6fa;
+                min-height: 100vh;
+            }
 
-<div class="container">
+            /* 사이드바 */
+            .sidebar {
+                position: fixed;
+                left: 0;
+                top: 0;
+                width: 250px;
+                height: 100vh;
+                background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                padding: 30px 20px;
+                box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+            }
 
-    <!-- 1) 비밀번호 처음 설정 -->
-    <div id="setup-section" style="display:none;">
-        <h1>🔒 비밀번호 설정</h1>
-        <input type="password" id="new-pass" placeholder="비밀번호 입력">
-        <input type="password" id="new-pass2" placeholder="비밀번호 확인">
-        <button onclick="setPassword()">설정 완료</button>
-    </div>
+            .logo {
+                font-size: 1.5em;
+                font-weight: bold;
+                margin-bottom: 40px;
+                text-align: center;
+            }
 
-    <!-- 2) 로그인 화면 -->
-    <div id="login-section" style="display:none;">
-        <h1>🔐 로그인</h1>
-        <input type="password" id="login-pass" placeholder="비밀번호 입력">
-        <button onclick="login()">입장하기</button>
-    </div>
+            .menu-item {
+                padding: 15px 20px;
+                margin-bottom: 10px;
+                border-radius: 10px;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            }
 
-    <!-- 3) 메인 화면 -->
-    <div id="main-section" style="display:none;">
-        <h1>📁 비밀 사진 보관함</h1>
+            .menu-item:hover {
+                background: rgba(255, 255, 255, 0.2);
+            }
 
-        <div class="upload-box">
-            <input type="file" id="file-input" accept="image/*">
-            <button onclick="uploadImage()">사진 업로드</button>
+            .menu-item.active {
+                background: rgba(255, 255, 255, 0.3);
+            }
+
+            .menu-icon {
+                font-size: 1.2em;
+            }
+
+            /* 메인 컨텐츠 */
+            .main-content {
+                margin-left: 250px;
+                padding: 30px;
+            }
+
+            .header {
+                background: white;
+                padding: 25px 30px;
+                border-radius: 15px;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+                margin-bottom: 30px;
+            }
+
+            .header h1 {
+                color: #333;
+                font-size: 2em;
+                margin-bottom: 5px;
+            }
+
+            .header p {
+                color: #666;
+                font-size: 1em;
+            }
+
+            /* 대시보드 그리드 */
+            .dashboard-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                gap: 25px;
+                margin-bottom: 30px;
+            }
+
+            .card {
+                background: white;
+                padding: 25px;
+                border-radius: 15px;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+                transition: all 0.3s ease;
+            }
+
+            .card:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            }
+
+            .card-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 20px;
+            }
+
+            .card-title {
+                font-size: 1.2em;
+                font-weight: bold;
+                color: #333;
+            }
+
+            .card-icon {
+                font-size: 2em;
+            }
+
+            /* 추천 카드 */
+            .recommend-card {
+                grid-column: span 2;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                min-height: 300px;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+            }
+
+            .recommend-result {
+                text-align: center;
+                margin: 30px 0;
+            }
+
+            .recommend-emoji {
+                font-size: 5em;
+                margin-bottom: 15px;
+            }
+
+            .recommend-name {
+                font-size: 2.5em;
+                font-weight: bold;
+                margin-bottom: 10px;
+            }
+
+            .recommend-category {
+                font-size: 1.2em;
+                opacity: 0.9;
+            }
+
+            .recommend-btn {
+                background: white;
+                color: #667eea;
+                border: none;
+                padding: 15px 40px;
+                font-size: 1.1em;
+                border-radius: 50px;
+                cursor: pointer;
+                font-weight: bold;
+                transition: all 0.3s ease;
+            }
+
+            .recommend-btn:hover {
+                transform: scale(1.05);
+                box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            }
+
+            /* 필터 버튼 */
+            .filter-group {
+                display: flex;
+                gap: 10px;
+                flex-wrap: wrap;
+                margin-bottom: 20px;
+            }
+
+            .filter-btn {
+                padding: 10px 20px;
+                border: 2px solid rgba(255,255,255,0.3);
+                background: transparent;
+                color: white;
+                border-radius: 25px;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                font-size: 0.9em;
+            }
+
+            .filter-btn:hover {
+                background: rgba(255,255,255,0.2);
+            }
+
+            .filter-btn.active {
+                background: white;
+                color: #667eea;
+            }
+
+            /* 통계 카드 */
+            .stat-value {
+                font-size: 2.5em;
+                font-weight: bold;
+                color: #667eea;
+                margin: 10px 0;
+            }
+
+            .stat-label {
+                color: #666;
+                font-size: 0.9em;
+            }
+
+            /* 리스트 */
+            .menu-list {
+                list-style: none;
+            }
+
+            .menu-list-item {
+                padding: 12px 15px;
+                background: #f8f9fa;
+                border-radius: 8px;
+                margin-bottom: 8px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                transition: all 0.3s ease;
+            }
+
+            .menu-list-item:hover {
+                background: #e9ecef;
+                transform: translateX(5px);
+            }
+
+            /* 위치 정보 */
+            .location-status {
+                text-align: center;
+                padding: 20px;
+                color: #666;
+            }
+
+            .loading-spinner {
+                width: 40px;
+                height: 40px;
+                border: 4px solid #f3f3f3;
+                border-top: 4px solid #667eea;
+                border-radius: 50%;
+                animation: spin 1s linear infinite;
+                margin: 0 auto 15px;
+            }
+
+            @keyframes spin {
+                0% {
+                    transform: rotate(0deg);
+                }
+                100% {
+                    transform: rotate(360deg);
+                }
+            }
+
+            .location-info {
+                padding: 15px 0;
+            }
+
+            .location-item {
+                display: flex;
+                align-items: flex-start;
+                margin-bottom: 12px;
+                padding: 10px;
+                background: #f8f9fa;
+                border-radius: 8px;
+            }
+
+            .location-label {
+                font-weight: bold;
+                color: #667eea;
+                min-width: 80px;
+                margin-right: 10px;
+            }
+
+            .location-value {
+                color: #333;
+                flex: 1;
+                word-break: break-word;
+            }
+
+            .location-btn {
+                width: 100%;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                border: none;
+                padding: 12px 20px;
+                border-radius: 8px;
+                cursor: pointer;
+                font-size: 0.95em;
+                font-weight: bold;
+                transition: all 0.3s ease;
+                margin-top: 15px;
+            }
+
+            .location-btn:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+            }
+
+            .location-btn:disabled {
+                opacity: 0.6;
+                cursor: not-allowed;
+                transform: none;
+            }
+
+            .error-message {
+                color: #e74c3c;
+                text-align: center;
+                padding: 15px;
+                background: #fee;
+                border-radius: 8px;
+                margin-bottom: 10px;
+            }
+
+            /* 반응형 */
+            @media (max-width: 768px) {
+                .sidebar {
+                    width: 70px;
+                    padding: 20px 10px;
+                }
+
+                .logo {
+                    font-size: 1.2em;
+                }
+
+                .menu-text {
+                    display: none;
+                }
+
+                .main-content {
+                    margin-left: 70px;
+                    padding: 20px;
+                }
+
+                .recommend-card {
+                    grid-column: span 1;
+                }
+
+                .dashboard-grid {
+                    grid-template-columns: 1fr;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <!-- 사이드바 -->
+        <div class="sidebar">
+            <div class="logo">🍽️ 메뉴봇</div>
+            <div class="menu-item active">
+                <span class="menu-icon">🏠</span>
+                <span class="menu-text">대시보드</span>
+            </div>
+            <div class="menu-item">
+                <span class="menu-icon">🎲</span>
+                <span class="menu-text">랜덤 추천</span>
+            </div>
+            <div class="menu-item">
+                <span class="menu-icon">📊</span>
+                <span class="menu-text">통계</span>
+            </div>
+            <div class="menu-item">
+                <span class="menu-icon">⭐</span>
+                <span class="menu-text">즐겨찾기</span>
+            </div>
+            <div class="menu-item">
+                <span class="menu-icon">⚙️</span>
+                <span class="menu-text">설정</span>
+            </div>
         </div>
 
-        <button onclick="openChangePassword()">비밀번호 변경</button>
+        <!-- 메인 컨텐츠 -->
+        <div class="main-content">
+            <!-- 헤더 -->
+            <div class="header">
+                <h1>오늘 뭐 먹지? 🤔</h1>
+                <p id="currentDate"></p>
+            </div>
 
-        <h2>저장된 사진</h2>
-        <div id="gallery"></div>
-    </div>
+            <!-- 대시보드 그리드 -->
+            <div class="dashboard-grid">
+                <!-- 메뉴 추천 카드 -->
+                <div class="card recommend-card">
+                    <div class="filter-group">
+                        <button class="filter-btn active" data-filter="all">전체</button>
+                        <button class="filter-btn" data-filter="korean">한식</button>
+                        <button class="filter-btn" data-filter="chinese">중식</button>
+                        <button class="filter-btn" data-filter="japanese">일식</button>
+                        <button class="filter-btn" data-filter="western">양식</button>
+                    </div>
 
-    <!-- 4) 비밀번호 변경 화면 -->
-    <div id="change-pass-section" style="display:none;">
-        <h1>🔐 비밀번호 변경</h1>
-        <input type="password" id="old-pass" placeholder="현재 비밀번호">
-        <input type="password" id="new-pass-change" placeholder="새 비밀번호">
-        <input type="password" id="new-pass-change2" placeholder="새 비밀번호 확인">
-        <button onclick="changePassword()">변경하기</button>
-        <button onclick="cancelChange()">취소</button>
-    </div>
+                    <div class="recommend-result" id="recommendResult">
+                        <div class="recommend-emoji">🍽️</div>
+                        <div class="recommend-name">메뉴를 추천해드릴게요!</div>
+                        <div class="recommend-category">아래 버튼을 눌러보세요</div>
+                    </div>
 
-</div>
+                    <button class="recommend-btn" id="recommendBtn">🎲 메뉴 추천받기</button>
+                </div>
 
-<script src="script.js"></script>
-</body>
+                <!-- 오늘의 추천 횟수 -->
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">오늘의 추천 횟수</span>
+                        <span class="card-icon">🔢</span>
+                    </div>
+                    <div class="stat-value" id="todayCount">0</div>
+                    <div class="stat-label">번 추천받았어요</div>
+                </div>
+
+                <!-- 전체 메뉴 수 -->
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">전체 메뉴 수</span>
+                        <span class="card-icon">📋</span>
+                    </div>
+                    <div class="stat-value" id="totalMenus">0</div>
+                    <div class="stat-label">개의 메뉴가 있어요</div>
+                </div>
+
+                <!-- 인기 메뉴 -->
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">최근 추천 메뉴</span>
+                        <span class="card-icon">🏆</span>
+                    </div>
+                    <ul class="menu-list" id="recentMenus">
+                        <li class="menu-list-item">아직 추천받은 메뉴가 없어요</li>
+                    </ul>
+                </div>
+
+                <!-- 카테고리별 통계 -->
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">카테고리별 메뉴</span>
+                        <span class="card-icon">📊</span>
+                    </div>
+                    <ul class="menu-list">
+                        <li class="menu-list-item">
+                            <span>🍚 한식</span>
+                            <span id="koreanCount">0개</span>
+                        </li>
+                        <li class="menu-list-item">
+                            <span>🥟 중식</span>
+                            <span id="chineseCount">0개</span>
+                        </li>
+                        <li class="menu-list-item">
+                            <span>🍣 일식</span>
+                            <span id="japaneseCount">0개</span>
+                        </li>
+                        <li class="menu-list-item">
+                            <span>🍝 양식</span>
+                            <span id="westernCount">0개</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- 내 위치 -->
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">내 위치</span>
+                        <span class="card-icon">📍</span>
+                    </div>
+                    <div id="locationInfo">
+                        <div class="location-status" id="locationStatus">
+                            <div class="loading-spinner"></div>
+                            <p>위치 정보를 가져오는 중...</p>
+                        </div>
+                    </div>
+                    <button class="location-btn" id="getLocationBtn">📍 위치 다시 가져오기</button>
+                </div>
+
+                <!-- 주변 식당 지도 -->
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">추천 메뉴 주변 식당</span>
+                        <span class="card-icon">🗺️</span>
+                    </div>
+                    <div id="restaurantInfo">
+                        <div class="location-status">
+                            <p style="color: #999;">메뉴를 먼저 추천받아주세요!</p>
+                        </div>
+                    </div>
+                    <div id="mapContainer" style="display: none;">
+                        <iframe
+                            id="mapFrame"
+                            width="100%"
+                            height="300"
+                            style="border:0; border-radius: 10px; margin-top: 15px;"
+                            loading="lazy"></iframe>
+                    </div>
+                    <button class="location-btn" id="searchRestaurantBtn" style="display: none;">🔍 주변 식당 다시 검색</button>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            const menus = {
+                korean: [
+                    {
+                        name: '김치찌개',
+                        emoji: '🍲',
+                        category: '한식'
+                    }, {
+                        name: '된장찌개',
+                        emoji: '🥘',
+                        category: '한식'
+                    }, {
+                        name: '비빔밥',
+                        emoji: '🍚',
+                        category: '한식'
+                    }, {
+                        name: '불고기',
+                        emoji: '🥩',
+                        category: '한식'
+                    }, {
+                        name: '삼겹살',
+                        emoji: '🥓',
+                        category: '한식'
+                    }, {
+                        name: '냉면',
+                        emoji: '🍜',
+                        category: '한식'
+                    }, {
+                        name: '칼국수',
+                        emoji: '🍝',
+                        category: '한식'
+                    }, {
+                        name: '김밥',
+                        emoji: '🍱',
+                        category: '한식'
+                    }
+                ],
+                chinese: [
+                    {
+                        name: '짜장면',
+                        emoji: '🍜',
+                        category: '중식'
+                    }, {
+                        name: '짬뽕',
+                        emoji: '🍲',
+                        category: '중식'
+                    }, {
+                        name: '탕수육',
+                        emoji: '🍖',
+                        category: '중식'
+                    }, {
+                        name: '마라탕',
+                        emoji: '🌶️',
+                        category: '중식'
+                    }, {
+                        name: '볶음밥',
+                        emoji: '🍚',
+                        category: '중식'
+                    }
+                ],
+                japanese: [
+                    {
+                        name: '초밥',
+                        emoji: '🍣',
+                        category: '일식'
+                    }, {
+                        name: '라멘',
+                        emoji: '🍜',
+                        category: '일식'
+                    }, {
+                        name: '돈까스',
+                        emoji: '🍛',
+                        category: '일식'
+                    }, {
+                        name: '우동',
+                        emoji: '🍲',
+                        category: '일식'
+                    }, {
+                        name: '규동',
+                        emoji: '🍱',
+                        category: '일식'
+                    }
+                ],
+                western: [
+                    {
+                        name: '파스타',
+                        emoji: '🍝',
+                        category: '양식'
+                    }, {
+                        name: '피자',
+                        emoji: '🍕',
+                        category: '양식'
+                    }, {
+                        name: '스테이크',
+                        emoji: '🥩',
+                        category: '양식'
+                    }, {
+                        name: '햄버거',
+                        emoji: '🍔',
+                        category: '양식'
+                    }, {
+                        name: '샐러드',
+                        emoji: '🥗',
+                        category: '양식'
+                    }
+                ]
+            };
+
+            let currentFilter = 'all';
+            let todayCount = 0;
+            let recentMenusList = [];
+            let userLocation = null; // 사용자 위치 저장
+            let lastRecommendedMenu = null; // 마지막 추천 메뉴 저장
+
+            // 날짜 표시
+            const today = new Date();
+            const dateStr = `${today.getFullYear()}년 ${today.getMonth() + 1}월 ${today.getDate()}일`;
+            document
+                .getElementById('currentDate')
+                .textContent = dateStr;
+
+            // 전체 메뉴 수 계산
+            const totalMenuCount = Object
+                .values(menus)
+                .flat()
+                .length;
+            document
+                .getElementById('totalMenus')
+                .textContent = totalMenuCount;
+
+            // 카테고리별 메뉴 수 표시
+            document
+                .getElementById('koreanCount')
+                .textContent = menus.korean.length + '개';
+            document
+                .getElementById('chineseCount')
+                .textContent = menus.chinese.length + '개';
+            document
+                .getElementById('japaneseCount')
+                .textContent = menus.japanese.length + '개';
+            document
+                .getElementById('westernCount')
+                .textContent = menus.western.length + '개';
+
+            // 필터 버튼
+            const filterBtns = document.querySelectorAll('.filter-btn');
+            filterBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    filterBtns.forEach(b => b.classList.remove('active'));
+                    btn
+                        .classList
+                        .add('active');
+                    currentFilter = btn.dataset.filter;
+                });
+            });
+
+            // 추천 버튼
+            const recommendBtn = document.getElementById('recommendBtn');
+            const recommendResult = document.getElementById('recommendResult');
+
+            recommendBtn.addEventListener('click', () => {
+                recommendBtn.disabled = true;
+
+                let count = 0;
+                const interval = setInterval(() => {
+                    const randomMenu = getRandomMenu();
+                    displayRecommendation(randomMenu);
+                    count++;
+
+                    if (count >= 15) {
+                        clearInterval(interval);
+                        recommendBtn.disabled = false;
+
+                        // 통계 업데이트
+                        todayCount++;
+                        document
+                            .getElementById('todayCount')
+                            .textContent = todayCount;
+
+                        // 최근 메뉴에 추가
+                        addToRecentMenus(randomMenu);
+
+                        // 마지막 추천 메뉴 저장 및 주변 식당 검색
+                        lastRecommendedMenu = randomMenu;
+                        searchNearbyRestaurants(randomMenu);
+                    }
+                }, 80);
+            });
+
+            function getRandomMenu() {
+                let menuList = [];
+
+                if (currentFilter === 'all') {
+                    menuList = Object
+                        .values(menus)
+                        .flat();
+                } else {
+                    menuList = menus[currentFilter];
+                }
+
+                return menuList[Math.floor(Math.random() * menuList.length)];
+            }
+
+            function displayRecommendation(menu) {
+                recommendResult.innerHTML = `
+                <div class="recommend-emoji">${menu.emoji}</div>
+                <div class="recommend-name">${menu.name}</div>
+                <div class="recommend-category">${menu.category}</div>
+            `;
+            }
+
+            function addToRecentMenus(menu) {
+                recentMenusList.unshift(menu);
+                if (recentMenusList.length > 5) {
+                    recentMenusList.pop();
+                }
+
+                const recentMenusEl = document.getElementById('recentMenus');
+                recentMenusEl.innerHTML = recentMenusList
+                    .map(
+                        m => `<li class="menu-list-item">
+                    <span>${m.emoji} ${m.name}</span>
+                    <span>${m.category}</span>
+                </li>`
+                    )
+                    .join('');
+            }
+
+            // GPS 위치 정보 기능
+            const locationStatus = document.getElementById('locationStatus');
+            const locationInfo = document.getElementById('locationInfo');
+            const getLocationBtn = document.getElementById('getLocationBtn');
+
+            // 페이지 로드 시 자동으로 위치 가져오기
+            getLocation();
+
+            // 버튼 클릭 시 위치 다시 가져오기
+            getLocationBtn.addEventListener('click', getLocation);
+
+            function getLocation() {
+                if (!navigator.geolocation) {
+                    showError('이 브라우저는 위치 서비스를 지원하지 않습니다.');
+                    return;
+                }
+
+                getLocationBtn.disabled = true;
+                locationInfo.innerHTML = `
+                <div class="location-status">
+                    <div class="loading-spinner"></div>
+                    <p>위치 정보를 가져오는 중...</p>
+                </div>
+            `;
+
+                navigator
+                    .geolocation
+                    .getCurrentPosition(showPosition, showError, {
+                        enableHighAccuracy: false, // 정확도 낮춰서 빠르게
+                        timeout: 15000, // 15초로 증가
+                        maximumAge: 60000 // 1분 이내 캐시 허용
+                    });
+            }
+
+            function showPosition(position) {
+                const lat = position.coords.latitude;
+                const lon = position.coords.longitude;
+
+                // 사용자 위치 저장
+                userLocation = {
+                    lat,
+                    lon
+                };
+
+                locationInfo.innerHTML = `
+                <div class="location-info">
+                    <div class="location-item">
+                        <span class="location-label">🕐 확인 시간</span>
+                        <span class="location-value">${new Date(
+                    position.timestamp
+                ).toLocaleTimeString('ko-KR')}</span>
+                    </div>
+                </div>
+            `;
+
+                getLocationBtn.disabled = false;
+
+                // 역 지오코딩으로 주소 가져오기
+                getAddress(lat, lon);
+
+                // 이미 추천된 메뉴가 있으면 식당 검색
+                if (lastRecommendedMenu) {
+                    searchNearbyRestaurants(lastRecommendedMenu);
+                }
+            }
+
+            function showError(error) {
+                let errorMessage = '';
+
+                switch (error.code) {
+                    case error.PERMISSION_DENIED:
+                        errorMessage = '위치 정보 접근이 거부되었습니다. 브라우저 설정에서 위치 권한을 허용해주세요.';
+                        break;
+                    case error.POSITION_UNAVAILABLE:
+                        errorMessage = '위치 정보를 사용할 수 없습니다.';
+                        break;
+                    case error.TIMEOUT:
+                        errorMessage = '위치 정보 요청 시간이 초과되었습니다.';
+                        break;
+                    default:
+                        errorMessage = '알 수 없는 오류가 발생했습니다.';
+                }
+
+                locationInfo.innerHTML = `
+                <div class="error-message">
+                    ⚠️ ${errorMessage}
+                </div>
+            `;
+
+                getLocationBtn.disabled = false;
+            }
+
+            async function getAddress(lat, lon) {
+                try {
+                    // OpenStreetMap Nominatim API 사용 (무료)
+                    const response = await fetch(
+                        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`,
+                        {
+                            headers: {
+                                'Accept-Language': 'ko'
+                            }
+                        }
+                    );
+
+                    const data = await response.json();
+
+                    if (data.display_name) {
+                        const addressDiv = document.createElement('div');
+                        addressDiv.className = 'location-item';
+                        addressDiv.innerHTML = `
+                        <span class="location-label">📍 주소</span>
+                        <span class="location-value">${data.display_name}</span>
+                    `;
+
+                        const locationInfoDiv = locationInfo.querySelector('.location-info');
+                        if (locationInfoDiv) {
+                            locationInfoDiv.insertBefore(addressDiv, locationInfoDiv.firstChild);
+                        }
+                    }
+                } catch (error) {
+                    console.log('주소 변환 실패:', error);
+                }
+            }
+
+            // 주변 식당 검색 기능
+            const restaurantInfo = document.getElementById('restaurantInfo');
+            const mapContainer = document.getElementById('mapContainer');
+            const mapFrame = document.getElementById('mapFrame');
+            const searchRestaurantBtn = document.getElementById('searchRestaurantBtn');
+
+            searchRestaurantBtn.addEventListener('click', () => {
+                if (lastRecommendedMenu) {
+                    searchNearbyRestaurants(lastRecommendedMenu);
+                }
+            });
+
+            function searchNearbyRestaurants(menu) {
+                if (!userLocation) {
+                    restaurantInfo.innerHTML = `
+                    <div class="location-status">
+                        <p style="color: #e74c3c;">⚠️ 위치 정보를 먼저 허용해주세요!</p>
+                    </div>
+                `;
+                    return;
+                }
+
+                restaurantInfo.innerHTML = `
+                <div class="location-status">
+                    <div class="loading-spinner"></div>
+                    <p>"${menu.name}" 주변 식당을 검색하는 중...</p>
+                </div>
+            `;
+
+                // Google Maps 검색 URL
+                const searchQuery = encodeURIComponent(`${menu.name} 맛집`);
+                const mapsUrl = `https://www.google.com/maps/embed/v1/search?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&q=${searchQuery}&center=${userLocation.lat},${userLocation.lon}&zoom=15`;
+
+                // 지도 표시
+                mapFrame.src = mapsUrl;
+                mapContainer.style.display = 'block';
+                searchRestaurantBtn.style.display = 'block';
+
+                restaurantInfo.innerHTML = `
+                <div class="location-info">
+                    <div class="location-item" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px; border-radius: 10px;">
+                        <span style="font-size: 1.5em;">${menu.emoji}</span>
+                        <span style="font-weight: bold; font-size: 1.1em;">${menu.name}</span>
+                    </div>
+                    <p style="color: #666; margin-top: 10px; font-size: 0.9em;">📍 내 위치 주변 식당을 지도에서 확인하세요!</p>
+                </div>
+            `;
+            }
+        </script>
+    </body>
 </html>
